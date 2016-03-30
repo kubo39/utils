@@ -10,6 +10,8 @@ struct NR
   string str; int nr;
 }
 
+
+version(linux)
 void genSyscall()
 {
   executeShell("printf '#include<sys/syscall.h>' | cpp -dM - | grep '__NR_'")
@@ -17,7 +19,18 @@ void genSyscall()
     .filter!(a => a.length >= 2 && a[2].isNumeric)
     .map!(a => NR(a[1], a[2].to!int))
     .array.sort!((a, b) => a.nr < b.nr)
-    .each!(a => writeln("enum " ~ a.str[2..$] ~ " = " ~ a.nr.to!string ~ ";"));
+    .each!(a => writeln("enum " ~ a.str[5 .. $].toUpper ~ " = " ~ a.nr.to!string ~ ";"));
+}
+
+version(OSX)
+void genSyscall()
+{
+  executeShell("printf '#include<sys/syscall.h>' | cpp -dM - | grep 'SYS_'")
+    .output.split("\n").map!(a => a.split(" "))
+    .filter!(a => a.length >= 2 && a[2].isNumeric)
+    .map!(a => NR(a[1], a[2].to!int))
+    .array.sort!((a, b) => a.nr < b.nr)
+    .each!(a => writeln("enum " ~ a.str[4 .. $].toUpper ~ " = " ~ a.nr.to!string ~ ";"));
 }
 
 void main()
