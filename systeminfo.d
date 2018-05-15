@@ -1,5 +1,7 @@
+import std.conv : to;
 import std.file : readText;
 import std.format : format;
+import std.process : pipeProcess, Redirect, wait;
 import std.stdio : File, writeln;
 import std.string : chop, split, startsWith;
 
@@ -54,17 +56,27 @@ string getTotalRAM()
     return memTotal;
 }
 
-string getStorageSize()
+enum DiskType
 {
-    import std.conv : to;
-    auto size = readText("/sys/block/sda/size").chop();
+    HDD = 1,
+    SSD,
+}
+
+DiskType findTypeFromName(string name)
+{
+    auto rotational = readText(format("/sys/block/%s/queue/rotational", name)).chop();
+    return cast(DiskType) rotational.to!int;
+}
+
+string getStorageSize(string name)
+{
+    auto size = readText(format("/sys/block/%s/size", name)).chop();
     auto gb = size.to!ulong * 512.0 / (1000.0 * 1000.0 * 1000.0);
     return format("%d GB", gb.to!ulong);
 }
 
 string getKernelVersion()
 {
-    import std.process : pipeProcess, Redirect, wait;
     auto pipes = pipeProcess(["uname", "-mrv"], Redirect.stdout);
     scope(exit) wait(pipes.pid);
     return pipes.stdout.readln.chop;
@@ -72,7 +84,6 @@ string getKernelVersion()
 
 string getOSInfo()
 {
-    import std.process : pipeProcess, Redirect, wait;
     auto pipes = pipeProcess(["lsb_release", "-ds"], Redirect.stdout);
     scope(exit) wait(pipes.pid);
     return pipes.stdout.readln.chop;
@@ -92,7 +103,7 @@ void main()
 {
     writeln("CPU情報: ", getProcessorInfo());
     writeln("メモリ容量: ", getTotalRAM());
-    writeln("HDD容量: ", getStorageSize());
+    writeln(format("ディスク容量: %s (%s)", getStorageSize("sda"), findTypeFromName("sda")));
     writeln("Linuxカーネル: ", getKernelVersion());
     writeln("OS情報: ", getOSInfo());
     writeln("メーカー: ", getVendor());
