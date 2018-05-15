@@ -54,12 +54,12 @@ string getTotalRAM()
     return memTotal;
 }
 
-string getStorageSize(string filesystem)
+string getStorageSize()
 {
     import std.conv : to;
-    auto size = readText(format("/sys/block/sda/%s/size", filesystem)).chop();
-    auto gb = size.to!ulong * 512.0 / (1024.0 * 1024.0 * 1024.0);
-    return format("%d GiB", gb.to!ulong);
+    auto size = readText("/sys/block/sda/size").chop();
+    auto gb = size.to!ulong * 512.0 / (1000.0 * 1000.0 * 1000.0);
+    return format("%d GB", gb.to!ulong);
 }
 
 string getProductName()
@@ -76,7 +76,7 @@ void main()
 {
     writeln("CPU情報: ", getProcessorInfo());
     writeln("メモリ容量: ", getTotalRAM());
-    writeln("HDD容量: ", getStorageSize("sda2"));
+    writeln("HDD容量: ", getStorageSize());
     writeln("メーカー: ", getVendor());
     writeln("型番: ", getProductName());
 }
