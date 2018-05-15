@@ -62,6 +62,14 @@ string getStorageSize()
     return format("%d GB", gb.to!ulong);
 }
 
+string getOSInfo()
+{
+    import std.process : pipeProcess, Redirect, wait;
+    auto pipes = pipeProcess(["lsb_release", "-ds"], Redirect.stdout);
+    scope(exit) wait(pipes.pid);
+    return pipes.stdout.readln.chop;
+}
+
 string getProductName()
 {
     return readText("/sys/devices/virtual/dmi/id/product_name").chop();
@@ -77,6 +85,7 @@ void main()
     writeln("CPU情報: ", getProcessorInfo());
     writeln("メモリ容量: ", getTotalRAM());
     writeln("HDD容量: ", getStorageSize());
+    writeln("OS情報: ", getOSInfo());
     writeln("メーカー: ", getVendor());
     writeln("型番: ", getProductName());
 }
