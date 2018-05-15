@@ -1,0 +1,82 @@
+import std.file : readText;
+import std.format : format;
+import std.stdio : File, writeln;
+import std.string : chop, split, startsWith;
+
+struct ProcessorInfo
+{
+    string modelName;
+    uint numOfProcessors;
+
+    this(string modelName, uint numOfProcessors)
+    {
+        this.modelName = modelName;
+        this.numOfProcessors = numOfProcessors;
+    }
+
+    auto toString()
+    {
+        return format("%s   コア数: %d", this.modelName, this.numOfProcessors);
+    }
+}
+
+auto getProcessorInfo()
+{
+    uint numOfProcessors = 0;
+    string modelName;
+    bool modelNameSeen = false;
+
+    auto f = File("/proc/cpuinfo");
+    foreach (line; f.byLineCopy())
+    {
+        // Calculate number of processors.
+        if (line.startsWith("processor"))
+            numOfProcessors++;
+
+        // Get model name only once.
+        if (line.startsWith("model name") && !modelNameSeen)
+        {
+            modelName = cast(immutable) line.split(": ")[1];
+            modelNameSeen = true;
+        }
+    }
+    return ProcessorInfo(modelName, numOfProcessors);
+}
+
+string getTotalRAM()
+{
+    string memTotal;
+    foreach (line; readText("/proc/meminfo").chop().split("\n"))
+    {
+        if (line.startsWith("MemTotal"))
+            memTotal = line.split(": ")[1];
+    }
+    return memTotal;
+}
+
+string getStorageSize(string filesystem)
+{
+    import std.conv : to;
+    auto size = readText(format("/sys/block/sda/%s/size", filesystem)).chop();
+    auto gb = size.to!ulong * 512.0 / (1024.0 * 1024.0 * 1024.0);
+    return format("%d GiB", gb.to!ulong);
+}
+
+string getProductName()
+{
+    return readText("/sys/devices/virtual/dmi/id/product_name").chop();
+}
+
+string getVendor()
+{
+    return readText("/sys/devices/virtual/dmi/id/sys_vendor").chop();
+}
+
+void main()
+{
+    writeln("CPU情報: ", getProcessorInfo());
+    writeln("メモリ容量: ", getTotalRAM());
+    writeln("HDD容量: ", getStorageSize("sda2"));
+    writeln("メーカー: ", getVendor());
+    writeln("型番: ", getProductName());
+}
