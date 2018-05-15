@@ -62,6 +62,14 @@ string getStorageSize()
     return format("%d GB", gb.to!ulong);
 }
 
+string getKernelVersion()
+{
+    import std.process : pipeProcess, Redirect, wait;
+    auto pipes = pipeProcess(["uname", "-mrv"], Redirect.stdout);
+    scope(exit) wait(pipes.pid);
+    return pipes.stdout.readln.chop;
+}
+
 string getOSInfo()
 {
     import std.process : pipeProcess, Redirect, wait;
@@ -85,6 +93,7 @@ void main()
     writeln("CPU情報: ", getProcessorInfo());
     writeln("メモリ容量: ", getTotalRAM());
     writeln("HDD容量: ", getStorageSize());
+    writeln("Linuxカーネル: ", getKernelVersion());
     writeln("OS情報: ", getOSInfo());
     writeln("メーカー: ", getVendor());
     writeln("型番: ", getProductName());
